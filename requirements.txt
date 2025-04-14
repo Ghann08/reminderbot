@@ -1,2 +1,3 @@
 python-telegram-bot~=22.00
 PyYAML~=6.0.2
+pydantic
