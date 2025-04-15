@@ -15,7 +15,7 @@ class Answer:
     text: str
     reply_markup: InlineKeyboardMarkup
 
-    def __init__(self, text: str, reply_markup: list):
+    def __init__(self, text: str, reply_markup: InlineKeyboardMarkup):
         self.text = text
         self.reply_markup = reply_markup
 
