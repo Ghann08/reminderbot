@@ -11,6 +11,14 @@ from telegram.ext import ContextTypes
 from pydantic import BaseModel
 from typing import Optional, Awaitable, Callable
 
+class answer:
+    text: str
+    reply_markup: list
+
+    def __init__(self, text: str, reply_markup: list):
+        self.text = text
+        self.reply_markup = reply_markup
+
 
 class Reminder:
     text: str
@@ -112,7 +120,7 @@ class User:
         # и вернуть нам надо календарик
         if self.current_reminder.text is None:
             self.current_reminder.text = message.text
-            return 'Когда отравить?', [x for x in self.current_reminder.generate_month()]
+            return answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
 
         # если текст уже задан, то мы в тексте можем только время получить
         # попытаемся распарсить
@@ -127,7 +135,7 @@ class User:
                 asyncio.create_task(self.current_reminder.remind())
                 self.reminders[self.current_reminder.id] = self.current_reminder
                 self.current_reminder = None
-                return f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}'
+                return answer(f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}', None)
 
 
 
@@ -138,16 +146,16 @@ class User:
         # если "plus_month" или "minus_month" - то перещёлкивание месяца, иначе выбрали дату
         if message.data == 'plus_month':
             self.current_reminder.change_month(1)
-            return 'Когда отравить?', [x for x in self.current_reminder.generate_month()]
+            return answer('Когда отравить?',  InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
         elif message.data == 'minus_month':
             self.current_reminder.change_month(-1)
-            return 'Когда отравить?', [x for x in self.current_reminder.generate_month()]
+            return answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
         else:
             # todo: проверка, что дата болше текущей
             # todo: далёкое туду, учесть, что юзер может выбрать дату сегодня и ждать до завтра. Надо бы взводить таймер.
             try:
                 self.current_reminder.selected_date = datetime.date.fromisoformat(message.data)
-                return 'Теперь введите время'
+                return answer('Теперь введите время', None)
             except ValueError:
                 pass
                 # считаем, что это нажата кнопка "месяца"
@@ -163,8 +171,8 @@ async def rem(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_data[update.message.chat_id] = User(update.message.chat_id)
 
     user = user_data[update.message.chat_id]
-    text, reply_markup = await user.process_message(update.message)
-    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(reply_markup))
+    ans = await user.process_message(update.message)
+    await update.message.reply_text(ans.text, reply_markup=ans.reply_markup)
 
 async def delay(update: Update, day: int, month: int, text: str):
     number_even_numbers = 0
@@ -180,10 +188,8 @@ async def delay(update: Update, day: int, month: int, text: str):
 
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = user_data[update.callback_query.message.chat_id]
-    text, reply_markup = await user.process_button(update.callback_query)
-    await update.callback_query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(reply_markup))
-
-
+    ans = await user.process_button(update.callback_query)
+    await update.callback_query.edit_message_text(ans.text, reply_markup=ans.reply_markup)
 
 # todo: оформить выбор времени напоминания
 # todo офрмить сохраиеие напоминаний при выключение и старта сервиса
