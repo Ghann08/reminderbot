@@ -11,9 +11,9 @@ from telegram.ext import ContextTypes
 from pydantic import BaseModel
 from typing import Optional, Awaitable, Callable
 
-class answer:
+class Answer:
     text: str
-    reply_markup: list
+    reply_markup: InlineKeyboardMarkup
 
     def __init__(self, text: str, reply_markup: list):
         self.text = text
@@ -79,6 +79,7 @@ class User:
     def __init__(self, user_id: int):
         self._user_id = user_id
         self.current_reminder = None
+        self.reminders = {}
 
     async def delete_remind(self, remind_id: UUID):
         pass
@@ -120,7 +121,7 @@ class User:
         # и вернуть нам надо календарик
         if self.current_reminder.text is None:
             self.current_reminder.text = message.text
-            return answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
+            return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
 
         # если текст уже задан, то мы в тексте можем только время получить
         # попытаемся распарсить
@@ -134,8 +135,9 @@ class User:
                 self.current_reminder.selected_time = tm
                 asyncio.create_task(self.current_reminder.remind())
                 self.reminders[self.current_reminder.id] = self.current_reminder
+                res = Answer(f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}', None)
                 self.current_reminder = None
-                return answer(f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}', None)
+                return res
 
 
 
@@ -146,16 +148,16 @@ class User:
         # если "plus_month" или "minus_month" - то перещёлкивание месяца, иначе выбрали дату
         if message.data == 'plus_month':
             self.current_reminder.change_month(1)
-            return answer('Когда отравить?',  InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
+            return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
         elif message.data == 'minus_month':
             self.current_reminder.change_month(-1)
-            return answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
+            return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
         else:
             # todo: проверка, что дата болше текущей
             # todo: далёкое туду, учесть, что юзер может выбрать дату сегодня и ждать до завтра. Надо бы взводить таймер.
             try:
                 self.current_reminder.selected_date = datetime.date.fromisoformat(message.data)
-                return answer('Теперь введите время', None)
+                return Answer('Теперь введите время', None)
             except ValueError:
                 pass
                 # считаем, что это нажата кнопка "месяца"
