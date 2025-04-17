@@ -66,9 +66,22 @@ class Reminder:
                InlineKeyboardButton(" >>> ", callback_data='plus_month')]
 
 
-    async def remind(self):
-        await asyncio.sleep(1)
-        await self._on_delete(self.id)
+    async def remind(self, message: Message):
+        number_even_numbers = 0
+        time = datetime.datetime.now()
+        for i in range(time.month, self.selected_date.month):
+            if i % 2 == 0:
+                number_even_numbers += 1
+        dayinsec = (((self.selected_date.month - time.month) * 30 + number_even_numbers) - time.day + self.selected_date.day) * 86400
+        hourinsec = ((self.selected_time.hour - datetime.datetime.now().time().hour) * 3600)
+        mininsec = (self.selected_time.minute - datetime.datetime.now().time().minute) * 60
+        x = (dayinsec + hourinsec + mininsec) - datetime.datetime.now().time().second
+        print(dayinsec)
+        print(hourinsec)
+        print(mininsec)
+        print(x)
+        await asyncio.sleep(x)
+        await message.reply_text(text=self.text)
 
 
 class User:
@@ -133,7 +146,7 @@ class User:
                 raise Exception('Time format invalid')
             else:
                 self.current_reminder.selected_time = tm
-                asyncio.create_task(self.current_reminder.remind())
+                asyncio.create_task(self.current_reminder.remind(message))
                 self.reminders[self.current_reminder.id] = self.current_reminder
                 res = Answer(f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}', None)
                 self.current_reminder = None
@@ -176,17 +189,8 @@ async def rem(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ans = await user.process_message(update.message)
     await update.message.reply_text(ans.text, reply_markup=ans.reply_markup)
 
-async def delay(update: Update, day: int, month: int, text: str):
-    number_even_numbers = 0
-    time = datetime.datetime.now()
-    for i in range(time.month, month):
-        if i % 2 == 0:
-            number_even_numbers += 1
-    x = ((month - time.month)*30 + number_even_numbers) - time.day + day
-    await update.callback_query.message.reply_text(f'Мы отправим сообщеньку через {x} секунд, то есть через количество дней до настоящей отправки')
-    await asyncio.sleep(x)
-    await update.callback_query.message.reply_text(text)
-
+async def send_remind(text: str):
+    pass
 
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = user_data[update.callback_query.message.chat_id]
