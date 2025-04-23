@@ -76,10 +76,6 @@ class Reminder:
         hourinsec = ((self.selected_time.hour - datetime.datetime.now().time().hour) * 3600)
         mininsec = (self.selected_time.minute - datetime.datetime.now().time().minute) * 60
         x = (dayinsec + hourinsec + mininsec) - datetime.datetime.now().time().second
-        print(dayinsec)
-        print(hourinsec)
-        print(mininsec)
-        print(x)
         await asyncio.sleep(x)
         await message.reply_text(text=self.text)
 
@@ -143,7 +139,14 @@ class User:
         else:
             tm = self.try_parce_time(message.text)
             if tm is None:
-                raise Exception('Time format invalid')
+                self.current_reminder = None
+                return Answer('Неправильное время', None)
+            elif tm.hour < datetime.datetime.now().hour:
+                self.current_reminder = None
+                return Answer('Неправильное время', None)
+            elif tm.minute < datetime.datetime.now().minute and tm.hour == datetime.datetime.now().hour:
+                self.current_reminder = None
+                return Answer('Неправильное время', None)
             else:
                 self.current_reminder.selected_time = tm
                 asyncio.create_task(self.current_reminder.remind(message))
@@ -165,12 +168,17 @@ class User:
         elif message.data == 'minus_month':
             self.current_reminder.change_month(-1)
             return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
-        else:
-            # todo: проверка, что дата болше текущей
+        elif datetime.date.fromisoformat(message.data).day < datetime.datetime.now().date().day and datetime.date.fromisoformat(message.data).month <= datetime.datetime.now().date().month:
+            return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
+        elif datetime.date.fromisoformat(message.data).month < datetime.datetime.now().date().month:
+            return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
+
             # todo: далёкое туду, учесть, что юзер может выбрать дату сегодня и ждать до завтра. Надо бы взводить таймер.
+        else:
             try:
                 self.current_reminder.selected_date = datetime.date.fromisoformat(message.data)
-                return Answer('Теперь введите время', None)
+                return Answer('''Теперь введите время
+            Часы:Минуты''' , None)
             except ValueError:
                 pass
                 # считаем, что это нажата кнопка "месяца"
