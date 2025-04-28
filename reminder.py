@@ -1,6 +1,4 @@
 import asyncio
-from ast import increment_lineno
-from json import dumps, loads
 from dateutils import relativedelta
 import datetime
 import re
@@ -8,7 +6,6 @@ from uuid import UUID, uuid4
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
 from telegram.ext import ContextTypes
-from pydantic import BaseModel
 from typing import Optional, Awaitable, Callable
 
 class Answer:
@@ -27,7 +24,7 @@ class Reminder:
     selected_date: datetime.date
     selected_time: datetime.time
     _on_delete: Callable[[UUID], Awaitable[None]]
-    calendry = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь",
+    calendar = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь",
                 "декабрь"]
 
     def __init__(self, on_delete: Callable[[UUID], Awaitable[None]]):
@@ -41,7 +38,8 @@ class Reminder:
     def change_month(self, delta: int):
         self._last_generated_month += relativedelta(months=delta)
 
-    def generate_week(self, first_date: datetime.datetime):
+    @staticmethod
+    def generate_week(first_date: datetime.datetime):
         for c in range(7):
             date = first_date + datetime.timedelta(days=c)
             yield InlineKeyboardButton(text=str(date.day), callback_data=date.date().isoformat())
@@ -62,7 +60,7 @@ class Reminder:
         yield [InlineKeyboardButton(" <<< ", callback_data='minus_month')
                 if self._last_generated_month > datetime.date.today() else \
                     InlineKeyboardButton(" ", callback_data='skip_any'),
-               InlineKeyboardButton(f'{self.calendry[month - 1]} ({self._last_generated_month.year})' , callback_data='skip_any'),
+               InlineKeyboardButton(f'{self.calendar[month - 1]} ({self._last_generated_month.year})', callback_data='skip_any'),
                InlineKeyboardButton(" >>> ", callback_data='plus_month')]
 
 
@@ -93,8 +91,17 @@ class User:
     async def delete_remind(self, remind_id: UUID):
         pass
 
-    def try_parce_time(self, user_input: str):
+    @staticmethod
+    def try_parce_time(user_input: str):
         user_input = user_input.strip().lower()
+
+        # HH MM
+        match = re.search(r'(0?[0-9]|1[0-9]|2[0-3])\s{0,3}([0-5][0-9])', user_input)
+        if match:
+            h, m = int(match[1]), int(match[2])
+            if 0 <= h < 24 and 0 <= m < 60:
+                return datetime.time(h, m)
+
 
         # 1. HH:MM or H:MM
         match = re.search(r'(\d{1,2})[:.](\d{2})', user_input)
@@ -196,9 +203,6 @@ async def rem(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = user_data[update.message.chat_id]
     ans = await user.process_message(update.message)
     await update.message.reply_text(ans.text, reply_markup=ans.reply_markup)
-
-async def send_remind(text: str):
-    pass
 
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = user_data[update.callback_query.message.chat_id]
