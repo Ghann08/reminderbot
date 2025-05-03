@@ -23,6 +23,7 @@ class Reminder:
     _last_generated_month: datetime.date
     selected_date: datetime.date
     selected_time: datetime.time
+    selected_tm: datetime
     _on_delete: Callable[[UUID], Awaitable[None]]
     calendar = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь",
                 "декабрь"]
@@ -64,18 +65,12 @@ class Reminder:
                InlineKeyboardButton(" >>> ", callback_data='plus_month')]
 
 
-    async def remind(self, message: Message):
-        number_even_numbers = 0
-        time = datetime.datetime.now()
-        for i in range(time.month, self.selected_date.month):
-            if i % 2 == 0:
-                number_even_numbers += 1
-        dayinsec = (((self.selected_date.month - time.month) * 30 + number_even_numbers) - time.day + self.selected_date.day) * 86400
-        hourinsec = ((self.selected_time.hour - datetime.datetime.now().time().hour) * 3600)
-        mininsec = (self.selected_time.minute - datetime.datetime.now().time().minute) * 60
-        x = (dayinsec + hourinsec + mininsec) - datetime.datetime.now().time().second
-        await asyncio.sleep(x)
-        await message.reply_text(text=self.text)
+    async def remind(self, tm_diff: int, message: Message, text: str):
+        print(tm_diff)
+        await asyncio.sleep(tm_diff)
+        print(tm_diff)
+        await message.reply_text( text)
+        await self._on_delete(self.id)
 
 
 class User:
@@ -139,26 +134,25 @@ class User:
             self.current_reminder.text = message.text
             return Answer('Когда отравить?', InlineKeyboardMarkup([x for x in self.current_reminder.generate_month()]))
 
+
         # если текст уже задан, то мы в тексте можем только время получить
         # попытаемся распарсить
         # если поулчилось, то значит мы выполнили все условия
         # отправка
+
         else:
-            tm = self.try_parce_time(message.text)
-            if tm is None:
-                self.current_reminder = None
-                return Answer('Неправильное время', None)
-            elif tm.hour < datetime.datetime.now().hour:
-                self.current_reminder = None
-                return Answer('Неправильное время', None)
-            elif tm.minute < datetime.datetime.now().minute and tm.hour == datetime.datetime.now().hour:
+            self.current_reminder.selected_time = self.try_parce_time(message.text)
+            tm = datetime.datetime.combine(self.current_reminder.selected_date, self.current_reminder.selected_time)
+            tm_diff = tm - datetime.datetime.now()
+            if tm.time is None or int(tm_diff.total_seconds())   <= 0:
                 self.current_reminder = None
                 return Answer('Неправильное время', None)
             else:
-                self.current_reminder.selected_time = tm
-                asyncio.create_task(self.current_reminder.remind(message))
+                asyncio.create_task(self.current_reminder.remind(int(tm_diff.total_seconds()), message, self.current_reminder.text))
                 self.reminders[self.current_reminder.id] = self.current_reminder
-                res = Answer(f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}', None)
+                res = Answer(
+                    f'Напомним вам: {self.current_reminder.selected_date} в {self.current_reminder.selected_time}',
+                    None)
                 self.current_reminder = None
                 return res
 
@@ -209,7 +203,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     ans = await user.process_button(update.callback_query)
     await update.callback_query.edit_message_text(ans.text, reply_markup=ans.reply_markup)
 
-# todo: оформить выбор времени напоминания
+
 # todo офрмить сохраиеие напоминаний при выключение и старта сервиса
 # todo офрмить логирование запросов
 # todo баг со временем(не правильно посчитал количество днеё до 29   июля, проблема с чётными месецами
