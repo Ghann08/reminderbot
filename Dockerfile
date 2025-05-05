@@ -1,5 +1,7 @@
 FROM python:3.11-slim-bullseye
 
+ENV TZ=Europe/Moscow
+
 WORKDIR /app
 
 COPY . .
