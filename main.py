@@ -1,30 +1,32 @@
-from telegram.ext import CallbackQueryHandler
-
-from yaml import safe_load
-
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
-from reminder import  rem, handle_button
-
-GET_RIMEND, GET_TIME = range(2)
-
-async def cancel():
-    print("end")
-
-def main() -> None:
-    cfg = safe_load(open('config.yml').read())
-    application = Application.builder().token(cfg['token']).build()
-
-    handler = MessageHandler(filters=filters.TEXT, callback=rem)
-    btn_handler = CallbackQueryHandler(handle_button)
-    try:
-        application.add_handler(handler)
-        application.add_handler(btn_handler)
-        application.run_polling(1)
-    finally:
-        application.remove_handler(handler)
-        application.remove_handler(btn_handler)
+from fastapi import FastAPI, Query
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+import uvicorn
+from pydantic import BaseModel
+import asyncio
+from asyncio import create_task
 
 
-if __name__ == "__main__":
-    main()
 
+
+
+# Логика для lifespan (запуск/остановка)
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    print("Starting up...")
+    yield
+    print("Shutting down...")
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.post("/items/")
+async def remind(tm_diff: int, text: str) -> dict:
+    await asyncio.sleep(tm_diff)
+    print(text)
+    return {"e": "okey"}
+
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="localhost", port=5000)
