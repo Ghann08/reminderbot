@@ -1,31 +1,44 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 import uvicorn
-from pydantic import BaseModel
 import asyncio
-from asyncio import create_task
+from pydantic import BaseModel
 
 
 
+class Reminders(BaseModel):
+    user_id: int
+    text_message: str
+    dispatch_difference: int
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+async def remind(tm_diff: int, text: str):
+    await asyncio.sleep(tm_diff)
+    print(text)
 
 
 # Логика для lifespan (запуск/остановка)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    print("Starting up...")
+    print("Shutting up...")
     yield
     print("Shutting down...")
 
 
 app = FastAPI(lifespan=lifespan)
 
+@app.post("/remiders/")
+async def rem(rems: Reminders):
+    asyncio.create_task(remind(rems.dispatch_difference, rems.text_message))
+    return {'e': "okey"}
 
-@app.post("/items/")
-async def remind(tm_diff: int, text: str) -> dict:
-    await asyncio.sleep(tm_diff)
-    print(text)
-    return {"e": "okey"}
 
 
 if __name__ == '__main__':
