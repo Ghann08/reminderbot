@@ -66,13 +66,12 @@ class Reminder:
                InlineKeyboardButton(f'{self.calendry[month - 1]} ({self._last_generated_month.year})' , callback_data='skip_any'),
                InlineKeyboardButton(" >>> ", callback_data='plus_month')]
 
-
-    async def remind(self, tm_diff: int, message: Message, text: str):
-        print(tm_diff)
+    async def _test_message(self, tm_diff: int, message: str):
         await asyncio.sleep(tm_diff)
-        print(tm_diff)
-        await message.reply_text( text)
-        await self._on_delete(self.id)
+        print(message)
+
+    async def run_message(self, tm_diff: int, message: str):
+        asyncio.create_task(self._test_message(tm_diff, message))
 
 
 class User:

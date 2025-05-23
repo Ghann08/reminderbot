@@ -5,6 +5,7 @@ import uvicorn
 import asyncio
 from pydantic import BaseModel
 
+from reminder import Reminder
 
 
 class Reminders(BaseModel):
@@ -36,8 +37,8 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post("/remiders/")
 async def rem(rems: Reminders):
-    asyncio.create_task(remind(rems.dispatch_difference, rems.text_message))
-    return {'e': "okey"}
+    reminds = Reminder
+    await reminds.run_message(rems.dispatch_difference, rems.text_message)
 
 
 
