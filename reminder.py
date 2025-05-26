@@ -1,6 +1,4 @@
 import asyncio
-from ast import increment_lineno
-from json import dumps, loads
 from dateutils import relativedelta
 import datetime
 import re
@@ -8,8 +6,7 @@ from uuid import UUID, uuid4
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
 from telegram.ext import ContextTypes
-from pydantic import BaseModel
-from typing import Optional, Awaitable, Callable
+from typing import Awaitable, Callable
 
 class Answer:
     text: str
@@ -31,13 +28,13 @@ class Reminder:
     calendry = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь",
                 "декабрь"]
 
-    def __init__(self, on_delete: Callable[[UUID], Awaitable[None]]):
+    def __init__(self):
         self.text = None
         self.id = uuid4()
         self._last_generated_month = datetime.date.today()
         self.selected_date = None
         self.selected_time = None
-        self._on_delete = on_delete
+        #self._on_delete = on_delete
 
     def change_month(self, delta: int):
         self._last_generated_month += relativedelta(months=delta)
@@ -118,7 +115,7 @@ class User:
 
     async def process_message(self, message: Message):
         if self.current_reminder is None:
-            self.current_reminder = Reminder(self.delete_remind)
+            self.current_reminder = Reminder()
 
         # Если мы только создали напоминальщик, то мы хотим записать текст
         # и вернуть нам надо календарик

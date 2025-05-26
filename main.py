@@ -4,14 +4,16 @@ from typing import AsyncIterator
 import uvicorn
 import asyncio
 from pydantic import BaseModel
+from uuid import UUID
+import datetime
 
 from reminder import Reminder
 
 
 class Reminders(BaseModel):
-    user_id: int
-    text_message: str
-    dispatch_difference: int
+    text: str
+    id: int
+    selected_date: str
 
 
 class Item(BaseModel):
@@ -31,14 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     print("Shutting up...")
     yield
     print("Shutting down...")
-
+    
 
 app = FastAPI(lifespan=lifespan)
 
-@app.post("/remiders/")
-async def rem(rems: Reminders):
-    reminds = Reminder
-    await reminds.run_message(rems.dispatch_difference, rems.text_message)
+@app.post("/remiders")
+async def rem(dispatch_difference: int, text_message: str):
+    reminds = Reminder()
+    await reminds.run_message(dispatch_difference, text_message)
 
 
 
