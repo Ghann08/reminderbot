@@ -9,11 +9,6 @@ from pydantic import BaseModel
 from reminder import Reminder
 
 
-class Reminders(BaseModel):
-    text: str
-    id: int
-    selected_date: str
-
 
 class Item(BaseModel):
     name: str
