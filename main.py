@@ -4,8 +4,7 @@ from typing import AsyncIterator
 import uvicorn
 import asyncio
 from pydantic import BaseModel
-from uuid import UUID
-import datetime
+
 
 from reminder import Reminder
 
