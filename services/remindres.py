@@ -11,11 +11,12 @@ class Reminders():
         self.text = text
         self.id_remind = uuid4()
         if self.text != None:
-            asyncio.get_event_loop().create_task(create_remind(self.text))
+            asyncio.create_task(self.create_remind())
         else:
             print("okey")
 
-async def create_remind(text):
-    print("sdsds")
-    await asyncio.sleep(5)
-    print(text)
+    async def create_remind(self):
+        print("Напоминание создано")
+        tm_diff = self.date = datetime.now()
+        await asyncio.sleep(5)
+        print(f"Напоминание: {self.text}")
