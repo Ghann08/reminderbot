@@ -1,38 +1,32 @@
 import asyncio
 from datetime import datetime
 from uuid import uuid4, UUID
+from typing import Optional
+from asyncio import Task
 
 class Reminders():
-    text: str
-    date: datetime
+    text: Optional[str]
+    date: Optional[datetime]
     id_remind: UUID
+    remind: Task
 
-    def __init__(self, text: str | None = None, date: datetime | None = None):
+    def __init__(self, text: str = None, date: datetime = None):
         self.text = text
         self.date = date
         self.id_remind = uuid4()
-        if self.text != None and self.date != None:
-            tm_diff = self.date - datetime.now()
-            asyncio.create_task(self.create_remind(tm_diff))
-        else:
-            print(self.text)
-            print(self.date)
-            print("okey")
+        self.remind = asyncio.create_task(self._remind())
 
-    def update(self, text = None , date = None):
-        if self.text != text and text != None:
+    def _update(self, text: str = None ,date: datetime = None):
+        if self.text != text and text is not None:
             self.text = text
-        if self.date != date and date != None:
+        if self.date != date and date is not None:
             self.date = date
-        if self.text != None and self.date != None:
-            tm_diff = self.date - datetime.now()
-            asyncio.create_task(self.create_remind(tm_diff))
-        else:
-            print(self.text)
-            print(self.date)
-            print("okey")
 
-    async def create_remind(self, tm_diff):
-        print("Напоминание создано")
-        await asyncio.sleep(int(tm_diff.total_seconds()))
+    async def _remind(self):
+        while self.date is not None and datetime.now() <= self.date:
+            await asyncio.sleep(1)
         print(f"Напоминание: {self.text}")
+        self.remind.cancel()
+
+    async def delete_remind(self):
+        self.remind.cancel()

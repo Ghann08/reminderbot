@@ -1,10 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from uuid import uuid4
+from uuid import uuid4, UUID
+from typing import Optional
+
 
 class Reminders(BaseModel):
-    text: str | None = None
-    select_date: datetime.date | None = None
-    select_time: datetime.time | None = None
-    id_user: uuid4
-    id_remind: uuid4
+    text: Optional[str] = Field(default=None, description='Текст напоминания')
+    select_date: Optional[datetime.date] = Field(default=None, description='Дата напоминания')
+    select_time: Optional[datetime.time] = Field(default=None, description='Время напоминания')
+    id_user: Optional[UUID] = Field(description='id пользователя')
+    id_remind: Optional[UUID] = Field(description='id напоминия')
