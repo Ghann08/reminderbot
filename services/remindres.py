@@ -5,10 +5,10 @@ from typing import Optional
 from asyncio import Task
 
 class Reminders():
-    text: Optional[str]
-    date: Optional[datetime]
-    id_remind: UUID
-    remind: Task
+    _text: Optional[str]
+    _date: Optional[datetime]
+    _id_remind: UUID
+    _remind: Task
 
     def __init__(self, text: str = None, date: datetime = None):
         self.text = text
@@ -19,7 +19,7 @@ class Reminders():
     def _update(self, text: str = None ,date: datetime = None):
         if self.text != text and text is not None:
             self.text = text
-        if self.date != date and date is not None:
+        if self.date != date and date is not None and date > datetime.now():
             self.date = date
 
     async def _remind(self):

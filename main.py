@@ -6,7 +6,6 @@ import asyncio
 from pydantic import BaseModel
 
 
-from reminder import Reminder
 
 
 
